@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>México – El Juego</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5ecd7;color:#25211e;font-family:Arial,sans-serif}
+header{text-align:center;padding:18px;background:linear-gradient(90deg,#26765a,#fff,#d7655c);border-bottom:5px solid #285a45}
+h1{font:700 clamp(34px,6vw,65px) Georgia;margin:0}header p{font-weight:700}
+main{max-width:1150px;margin:auto;padding:15px}.box{background:#fff8e9;border:3px solid #315f4a;border-radius:20px;padding:16px;margin-bottom:15px}
+.top{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.turn{margin-left:auto;font-weight:900;font-size:20px}
+select,button{font-size:16px;border:2px solid #315f4a;border-radius:12px;padding:11px 15px;background:#fff;font-weight:700}
+button{cursor:pointer}.green{background:#167653;color:white}.red{background:#c74339;color:white}
+.board{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}
+.cell{height:76px;border:2px solid #665a48;border-radius:12px;text-align:center;padding:5px;background:#fff}
+.cell:nth-child(3n){background:#e8f3e9}.cell:nth-child(3n+1){background:#fff0e3}.cell:nth-child(3n+2){background:#f6e7e5}.cell.goal{background:#f5d678}
+.num{font-weight:900}.pieces{font-size:25px;margin-top:8px}
+.card{text-align:center}.cat{display:inline-block;background:#e8aa32;border-radius:99px;padding:6px 14px;font-weight:900}
+.q{font-size:clamp(20px,3vw,30px);font-weight:900;margin:18px}.ans{display:none;margin:12px auto;padding:12px;max-width:720px;background:white;border:2px dashed #7a6748;border-radius:12px}
+.judge{display:none;justify-content:center;gap:12px}.legend{font-weight:800;margin-top:10px}.rules{color:#5b5248}
+@media(max-width:650px){.cell{height:62px}.pieces{font-size:18px}.turn{width:100%;margin:0}}
+</style>
+</head>
+<body>
+<header><h1>🇲🇽 México – El Juego</h1><p>Conoce · Responde · Avanza</p></header>
+<main>
+<div class="box"><div class="top"><label><b>Spieler</b><br><select id="pc"><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label><button id="restart">🔄 Neues Spiel</button><div id="turn" class="turn"></div></div><p class="rules">Richtig: +1 Feld · Falsch: −1 Feld · Wer Feld 20 erreicht, gewinnt.</p></div>
+<div class="box"><div id="board" class="board"></div><div id="legend" class="legend"></div></div>
+<div class="box card"><div id="cat" class="cat"></div><div id="q" class="q"></div><button id="show" class="green">Respuesta anzeigen</button><div id="ans" class="ans"><b id="es"></b><br><span id="de"></span></div><div id="judge" class="judge"><button id="bad" class="red">✗ Falsch −1</button><button id="good" class="green">✓ Richtig +1</button></div><div id="msg"></div></div>
+</main>
+<script>
+var qs=[
+["Monumentos","¿Qué sitio arqueológico está mencionado en el vídeo?","Chichén Itzá.","Genannte archäologische Stätte."],
+["Monumentos","¿Qué civilización lo construyó?","Los mayas.","Die Maya."],
+["Monumentos","¿En qué estado federativo está?","Yucatán.","Im Bundesstaat Yucatán."],
+["Monumentos","¿Qué otra gran civilización prosperó hasta la llegada de los españoles en 1519?","Los aztecas.","Die Azteken."],
+["Moneda","¿Cuál es la moneda de México?","El peso mexicano.","Der mexikanische Peso."],
+["La bandera","¿Qué significa el color verde?","La esperanza.","Hoffnung."],
+["La bandera","¿Qué significa el color blanco?","La unidad.","Einheit."],
+["La bandera","¿Qué significa el color rojo?","La sangre de los héroes.","Das Blut der Helden."],
+["La bandera","¿Qué se ve en el escudo de la bandera?","El escudo nacional de México.","Das mexikanische Staatswappen."],
+["Lenguas","¿Cuántas lenguas indígenas se mencionan?","68 lenguas indígenas.","68 indigene Sprachen."],
+["Gastronomía","¿Qué platos típicos mexicanos se mencionan?","Los tacos, las enchiladas y el pozole.","Tacos, Enchiladas und Pozole."],
+["Tradiciones","¿Cómo se llama la vestimenta tradicional de los hombres?","El traje de charro.","Charro-Tracht."],
+["Tradiciones","¿Cómo se llama la vestimenta tradicional de las mujeres?","El traje de la china poblana.","China-Poblana-Tracht."],
+["Tradiciones","¿Cómo se llama el baile nacional de México?","El jarabe tapatío.","Mexikanischer Nationaltanz."],
+["Día de los Muertos","¿Qué hace mucha gente durante la celebración?","Se pinta la cara con aspectos de la vida y la muerte.","Gesichter werden mit Motiven von Leben und Tod bemalt."],
+["Celebridades","¿Qué actriz está mencionada en el vídeo?","Salma Hayek.","Salma Hayek."],
+["Celebridades","¿Qué pintora mexicana famosa interpretó?","Frida Kahlo.","Frida Kahlo."],
+["Historia","¿En qué año empezó la guerra de independencia?","En 1810.","1810."],
+["Historia","¿En qué año terminó?","En 1821.","1821."]
+];
+var icons=["🔴","🔵","🟢","🟡"],n=2,pos=[0,0,0,0],who=0,deck=[],idx=0,finished=false;
+function el(x){return document.getElementById(x)}
+function mix(){deck=qs.slice();for(var i=deck.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=deck[i];deck[i]=deck[j];deck[j]=t}idx=0}
+function board(){var s="";for(var i=1;i<=20;i++){var pp="";for(var j=0;j<n;j++)if(pos[j]===i)pp+=icons[j];s+='<div class="cell '+(i===20?'goal':'')+'"><div class="num">'+(i===20?'🏁 ZIEL':i)+'</div><div class="pieces">'+pp+'</div></div>'}el("board").innerHTML=s;var l=[];for(var k=0;k<n;k++)l.push(icons[k]+" Spieler "+(k+1)+": "+pos[k]);el("legend").innerHTML=l.join(" &nbsp; ")}
+function next(){if(idx>=deck.length)mix();var x=deck[idx];el("cat").textContent=x[0];el("q").textContent=x[1];el("es").textContent=x[2];el("de").textContent=x[3];el("ans").style.display="none";el("judge").style.display="none";el("show").style.display="inline-block";el("msg").textContent="";el("turn").textContent=icons[who]+" Spieler "+(who+1)+" ist dran"}
+function reset(){n=parseInt(el("pc").value);pos=[0,0,0,0];who=0;finished=false;mix();board();next()}
+function score(ok){if(finished)return;pos[who]=Math.max(0,Math.min(20,pos[who]+(ok?1:-1)));board();if(pos[who]===20){finished=true;el("msg").textContent="🏆 Spieler "+(who+1)+" gewinnt! ¡Felicidades!";el("judge").style.display="none";return}who=(who+1)%n;idx++;next()}
+el("restart").addEventListener("click",reset);el("pc").addEventListener("change",reset);
+el("show").addEventListener("click",function(){el("ans").style.display="block";el("judge").style.display="flex";el("show").style.display="none"});
+el("good").addEventListener("click",function(){score(true)});el("bad").addEventListener("click",function(){score(false)});
+reset();
+</script></body></html>
